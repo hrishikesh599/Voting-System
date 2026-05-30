@@ -16,9 +16,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'offline-voting-key'
 db = SQLAlchemy(app)
 
-with app.app_context():
-        setup()
-
 class Class(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
