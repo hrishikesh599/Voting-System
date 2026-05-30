@@ -290,5 +290,8 @@ def export_results():
         download_name='Voting_Results.zip'
     )
 
+with app.app_context():
+    setup()
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
