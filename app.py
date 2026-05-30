@@ -248,7 +248,8 @@ def export_results():
 
 
 with app.app_context():
-    setup()
+    os.makedirs("exports", exist_ok=True)
+    db.create_all()
 
 if __name__ == '__main__':
     app.run()
