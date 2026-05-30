@@ -1,9 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
 import os
 from pathlib import Path
+import zipfile
+import tempfile
+from io import BytesIO
 
 app = Flask(__name__)
 db_path = Path(__file__).parent / "data" / "voting.db"
@@ -131,127 +134,160 @@ def export_results():
     from reportlab.lib.pagesizes import A4
     from reportlab.platypus import (
         SimpleDocTemplate, Table, TableStyle,
-        Paragraph, Spacer, PageBreak, Image, KeepTogether
+        Paragraph, Spacer
     )
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.units import cm
     from reportlab.lib import colors
 
-    base_path = Path(__file__).parent.resolve()
-    export_folder = base_path / "exports"
-    export_folder.mkdir(exist_ok=True)
-
     classes = Class.query.all()
+
     if not classes:
         return "No classes found. Nothing to export."
 
-    exported_files = []
+    zip_buffer = BytesIO()
 
-    for cls in classes:
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        filename = export_folder / f"{cls.name.replace(' ', '_')}_results.pdf"
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
 
-        total_votes = sum(len(c.votes) for c in cls.candidates)
-        max_voters = cls.max_voters
-        votes_remaining = max(0, max_voters - total_votes)
+        for cls in classes:
 
-        # Table data
-        table_data = [["Candidate Name", "Votes"]]
-        for candidate in cls.candidates:
-            table_data.append([candidate.name, str(len(candidate.votes))])
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # Start building PDF
-        try:
-            doc = SimpleDocTemplate(str(filename), pagesize=A4,
-                                    rightMargin=2 * cm, leftMargin=2 * cm,
-                                    topMargin=2 * cm, bottomMargin=2 * cm)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
+                pdf_path = temp_pdf.name
 
-            styles = getSampleStyleSheet()
-            elements = []
+            total_votes = sum(len(c.votes) for c in cls.candidates)
+            max_voters = cls.max_voters
+            votes_remaining = max(0, max_voters - total_votes)
 
-            # Header Title
-            header_style = ParagraphStyle(
-                name='HeaderStyle',
-                fontSize=20,
-                leading=26,
-                alignment=TA_CENTER,
-                textColor=colors.white,
-                backColor=colors.darkblue,
-                spaceAfter=12,
-                spaceBefore=6,
-                padding=10
-            )
-            elements.append(Paragraph(f"<b>VOTING REPORT - {cls.name.upper()}</b>", header_style))
+            table_data = [["Candidate Name", "Votes"]]
 
-            # Export time
-            sub_style = ParagraphStyle(
-                name='SubInfo',
-                fontSize=10,
-                textColor=colors.grey,
-                spaceAfter=6,
-                alignment=TA_CENTER
-            )
-            elements.append(Paragraph(f"Generated on: {now}", sub_style))
-            elements.append(Spacer(1, 12))
+            for candidate in cls.candidates:
+                table_data.append([
+                    candidate.name,
+                    str(len(candidate.votes))
+                ])
 
-            # Summary Box
-            summary_data = [
-                ["Total Votes Cast", str(total_votes)],
-                ["Maximum Voters", str(max_voters)],
-                ["Votes Remaining", str(votes_remaining)]
-            ]
-            summary_table = Table(summary_data, colWidths=[150, 200])
-            summary_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-                ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 0), (-1, -1), 11),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ]))
-            elements.append(summary_table)
-            elements.append(Spacer(1, 24))
+            try:
+                doc = SimpleDocTemplate(
+                    pdf_path,
+                    pagesize=A4,
+                    rightMargin=2 * cm,
+                    leftMargin=2 * cm,
+                    topMargin=2 * cm,
+                    bottomMargin=2 * cm
+                )
 
-            # Voting Results Table
-            result_table = Table(table_data, colWidths=[300, 100])
-            result_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#0B3D91")),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 12),
-                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey]),
-                ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 1), (-1, -1), 11),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ]))
+                styles = getSampleStyleSheet()
+                elements = []
 
-            elements.append(Paragraph("<b>Candidate-wise Vote Count</b>", styles['Heading3']))
-            elements.append(Spacer(1, 10))
-            elements.append(result_table)
+                header_style = ParagraphStyle(
+                    name='HeaderStyle',
+                    fontSize=20,
+                    leading=26,
+                    alignment=TA_CENTER,
+                    textColor=colors.white,
+                    backColor=colors.darkblue,
+                    spaceAfter=12,
+                    spaceBefore=6
+                )
 
-            # Build document
-            doc.build(elements)
-            exported_files.append(filename.name)
+                elements.append(
+                    Paragraph(
+                        f"<b>VOTING REPORT - {cls.name.upper()}</b>",
+                        header_style
+                    )
+                )
 
-        except Exception as e:
-            return f"❌ Error Creating {filename.name}: {str(e)}"
+                sub_style = ParagraphStyle(
+                    name='SubInfo',
+                    fontSize=10,
+                    textColor=colors.grey,
+                    spaceAfter=6,
+                    alignment=TA_CENTER
+                )
 
-    return f"✅ Export Completed.<br>Files created:<br>" + "<br>".join(exported_files)
+                elements.append(
+                    Paragraph(
+                        f"Generated on: {now}",
+                        sub_style
+                    )
+                )
 
+                elements.append(Spacer(1, 12))
 
+                summary_data = [
+                    ["Total Votes Cast", str(total_votes)],
+                    ["Maximum Voters", str(max_voters)],
+                    ["Votes Remaining", str(votes_remaining)]
+                ]
 
-with app.app_context():
-    os.makedirs("exports", exist_ok=True)
-    db.create_all()
+                summary_table = Table(
+                    summary_data,
+                    colWidths=[150, 200]
+                )
+
+                summary_table.setStyle(TableStyle([
+                    ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 11),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ]))
+
+                elements.append(summary_table)
+                elements.append(Spacer(1, 24))
+
+                result_table = Table(
+                    table_data,
+                    colWidths=[300, 100]
+                )
+
+                result_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#0B3D91")),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 12),
+                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1),
+                     [colors.whitesmoke, colors.lightgrey]),
+                    ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ]))
+
+                elements.append(
+                    Paragraph(
+                        "<b>Candidate-wise Vote Count</b>",
+                        styles['Heading3']
+                    )
+                )
+
+                elements.append(Spacer(1, 10))
+                elements.append(result_table)
+
+                doc.build(elements)
+
+                pdf_name = f"{cls.name.replace(' ', '_')}_results.pdf"
+
+                zip_file.write(pdf_path, pdf_name)
+
+                os.remove(pdf_path)
+
+            except Exception as e:
+                return f"Error creating PDF for {cls.name}: {str(e)}"
+
+    zip_buffer.seek(0)
+
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name='Voting_Results.zip'
+    )
 
 if __name__ == '__main__':
-    app.run()
-
-
+    with app.app_context():
+        setup()
+    app.run(debug=True)
