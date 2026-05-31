@@ -169,12 +169,6 @@ gunicorn app:app
 
 ---
 
-## 📜 License
-
-This project is provided for educational and learning purposes.
-
----
-
 ## 👨‍💻 Author
 
 **HRISHIKESH T HEMANTH**
