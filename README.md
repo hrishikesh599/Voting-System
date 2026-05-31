@@ -1,12 +1,12 @@
-# 🗳️ Voting System
+# Voting System
 
 A modern web-based voting management system built using **Flask**, **SQLite**, **HTML**, **CSS**, and **JavaScript**. The application allows administrators to create elections, manage candidates, collect votes, monitor live results, and export professional PDF reports.
 
 ---
 
-## ✨ Features
+## Features
 
-### 👨‍💼 Admin Features
+### Admin Features
 
 * Create and manage multiple classes/elections
 * Add candidates to each class
@@ -16,7 +16,7 @@ A modern web-based voting management system built using **Flask**, **SQLite**, *
 * Reset votes for a specific class
 * Export election results
 
-### 🗳️ Voting Features
+### Voting Features
 
 * User-friendly voting interface
 * One-click vote submission
@@ -24,7 +24,7 @@ A modern web-based voting management system built using **Flask**, **SQLite**, *
 * Automatic voter limit enforcement
 * Live election monitoring
 
-### 📊 Reporting Features
+### Reporting Features
 
 * Generate professional PDF reports
 * Candidate-wise vote count
@@ -33,7 +33,7 @@ A modern web-based voting management system built using **Flask**, **SQLite**, *
 * Remaining voter calculation
 * Export results for all classes
 
-### 🎨 User Interface
+### User Interface
 
 * Modern glassmorphism-inspired design
 * Animated gradient backgrounds
@@ -43,7 +43,7 @@ A modern web-based voting management system built using **Flask**, **SQLite**, *
 
 ---
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 * Python
 * Flask
@@ -57,7 +57,7 @@ A modern web-based voting management system built using **Flask**, **SQLite**, *
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 Voting-System/
@@ -81,7 +81,7 @@ Voting-System/
 └── exports/
 ```
 
-## 🚀 Installation
+## Installation
 
 ### 1. Clone the Repository
 
@@ -130,44 +130,6 @@ http://127.0.0.1:5000
 
 ---
 
-## 🌐 Deployment
-
-This project can be deployed using:
-
-* Render
-* Railway
-* PythonAnywhere
-* VPS Hosting
-
-### Render Configuration
-
-**Build Command**
-
-```bash
-pip install -r requirements.txt
-```
-
-**Start Command**
-
-```bash
-gunicorn app:app
-```
-
----
-
-## 📈 Future Improvements
-
-* User authentication
-* Admin login system
-* One vote per student verification
-* Election scheduling
-* Candidate photos
-* Interactive result charts
-* PostgreSQL support
-* Audit logs
-* Email notifications
-
----
 
 ## 👨‍💻 Author
 
