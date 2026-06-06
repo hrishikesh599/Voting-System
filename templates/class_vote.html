@@ -1,1 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Class Voting System</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body onload="checkVoteLimitOnLoad()">
 
+  <div class="container">
+    <div class="vote-header">
+      <h1>Class Voting System</h1>
+      <p class="subtitle">Cast your vote with confidence.</p>
+    </div>
+
+    <div class="card-grid">
+      {% for candidate in candidates %}
+        <div class="candidate-card">
+          <h2>{{ candidate.name }}</h2>
+          <button class="vote-btn button-glow" onclick="castVote({{ candidate.id }}, this)">Vote</button>
+        </div>
+      {% endfor %}
+    </div>
+
+    <audio id="vote-sound" src="/static/beep1.ogg" preload="auto"></audio>
+
+   
+
+    <div class="footer">
+      <a href="/"><button class="button-secondary">Return to Home</button></a>
+    </div>
+  </div>
+ <div id="toast" class="toast"></div>
+  <script>
+    let votingDisabled = false;
+    let voteLimitReached = false;
+
+    function playSound() {
+      const audio = document.getElementById("vote-sound");
+      audio.play();
+    }
+
+  function showToast(message, success = true) {
+  const toast = document.getElementById("toast");
+  toast.innerText = message;
+  toast.className = `toast show ${success ? 'success' : 'error'}`;
+
+  setTimeout(() => {
+    toast.classList.remove("show", "success", "error");
+    votingDisabled = false;
+    if (!voteLimitReached) enableAllVoteButtons();
+  }, 3000);
+}
+
+    function disableAllVoteButtons() {
+      document.querySelectorAll(".vote-btn").forEach(btn => btn.disabled = true);
+    }
+
+    function enableAllVoteButtons() {
+      document.querySelectorAll(".vote-btn").forEach(btn => btn.disabled = false);
+    }
+
+    function castVote(candidateId, button) {
+      if (votingDisabled || voteLimitReached) return;
+      votingDisabled = true;
+      disableAllVoteButtons();
+      playSound();
+
+      fetch('/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidate_id: candidateId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          showToast(data.message, true);
+        } else {
+          showToast(data.message || "Error occurred", false);
+        }
+        if (data.message && data.message.includes("Maximum")) {
+          voteLimitReached = true;
+        }
+      })
+      .catch(() => {
+        showToast("Failed to cast vote.", false);
+        votingDisabled = false;
+        enableAllVoteButtons();
+      });
+    }
+
+    function checkVoteLimitOnLoad() {
+      fetch('/live-results')
+        .then(response => response.json())
+        .then(data => {
+          let totalVotes = data.reduce((sum, c) => sum + c.votes, 0);
+          let maxVotes = {{ max_votes }};
+          if (totalVotes >= maxVotes) {
+            voteLimitReached = true;
+            disableAllVoteButtons();
+            showToast("Voting has ended. Maximum voters reached.", false);
+          }
+        });
+    }
+  </script>
+  <div style="
+position: fixed;
+bottom: 20px;
+right: 20px;
+padding: 12px 20px;
+background: rgba(15,23,42,0.85);
+border: 1px solid rgba(96,165,250,0.2);
+border-radius: 50px;
+backdrop-filter: blur(12px);
+box-shadow: 0 0 20px rgba(96,165,250,0.12);
+font: 500 12px 'Segoe UI', sans-serif;
+letter-spacing: 1.5px;
+color: rgba(255,255,255,0.65);
+z-index:9999;
+">
+DESIGNED &amp; DEVELOPED BY
+<span style="
+color:#60a5fa;
+font-weight:700;
+text-shadow:0 0 8px rgba(96,165,250,0.4);
+">
+HRISHIKESH T HEMANTH
+</span>
+</div>
+</body>
+</html>
