@@ -75,10 +75,9 @@ Voting-System/
 │   ├── style.css
 │   └── assets/
 │
-├── data/
-│   └── voting.db
-│
-└── exports/
+└── data/
+    └── voting.db
+
 ```
 
 ## Installation
