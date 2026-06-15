@@ -35,7 +35,6 @@ A modern web-based voting management system built using **Flask**, **SQLite**, *
 
 ### User Interface
 
-* Modern glassmorphism-inspired design
 * Animated gradient backgrounds
 * Responsive mobile-friendly layout
 * Interactive buttons and hover effects
@@ -134,4 +133,4 @@ http://127.0.0.1:5000
 
 **HRISHIKESH T HEMANTH**
 
-Designed and developed as a modern digital voting solution for educational institutions.
+Designed and developed as a digital voting solution for educational institutions.
